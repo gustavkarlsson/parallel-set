@@ -1,18 +1,15 @@
 package se.gustavkarlsson.parallel_hash_set;
 
+import com.sun.istack.internal.NotNull;
+
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 
 public class ParallelHashSet<T> extends AbstractSet<T> {
@@ -22,7 +19,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
     private static final Object TOMBSTONE = new Object();
 
-    private static final ForkJoinPool workers = ForkJoinPool.commonPool();
+    // private static final ForkJoinPool workers = ForkJoinPool.commonPool();
 
     private final float loadFactor;
 
@@ -183,7 +180,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     }
 
     @Override
-    public synchronized <T1> T1[] toArray(T1[] array) {
+    public synchronized <T1> T1[] toArray(@NotNull T1[] array) {
         T1[] newArray = array.length >= size() ? array : (T1[]) java.lang.reflect.Array.newInstance(array.getClass().getComponentType(), size());
         Iterator<T> it = iterator();
         for (int i = 0; i < size(); i++) {
@@ -230,22 +227,13 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         if (collection == null) {
             throw new NullPointerException("Supplied collection cannot be null");
         }
-        List<RetainAllSubTask> tasks = new ArrayList<>();
-        int parallelism = workers.getParallelism();
-        for (int i = 0; i < parallelism; i++) {
-            tasks.add(new RetainAllSubTask(collection, i, parallelism));
-        }
-        List<Future<Integer>> futures = workers.invokeAll(tasks);
-        int removed = 0;
-        for (Future<Integer> future : futures) {
-            try {
-                removed += future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        long removed = parallelStreamIndexed().filter(e -> !collection.contains(e.reference)).peek(e -> table.set(e.index, TOMBSTONE)).count();
         size -= removed;
         return removed > 0;
+    }
+
+    private Stream<IndexedReference<T>> parallelStreamIndexed() {
+        return StreamSupport.stream(new IndexedSpliterator<>(this), true);
     }
 
     private void resizeTableIfNeeded(int potentialElements) {
@@ -266,7 +254,6 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         return new AtomicReferenceArray<Object>(calculateTableSize(minCapacity));
     }
 
-    // Stolen from HashMap
     private final int calculateTableSize(int capacity) {
         int idealSize = (int) (capacity / loadFactor) + 1;
         int n = idealSize - 1;
@@ -307,34 +294,9 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
     @Override
     public synchronized boolean removeIf(Predicate<? super T> filter) {
-        // TODO implement parallel removeIf(Predicate<? super T> filter)
-        return super.removeIf(filter);
-    }
-
-    private class RetainAllSubTask implements Callable<Integer> {
-
-        private final Collection<?> collection;
-        private final int offset;
-        private final int jump;
-
-        public RetainAllSubTask(Collection<?> collection, int offset, int jump) {
-            this.collection = collection;
-            this.offset = offset;
-            this.jump = jump;
-        }
-
-        @Override
-        public Integer call() throws Exception {
-            int removed = 0;
-            for (int i = offset; i < table.length(); i += jump) {
-                final Object element = table.get(i);
-                if (element != null && element != TOMBSTONE && !collection.contains(element)) {
-                    table.set(i, TOMBSTONE);
-                    removed++;
-                }
-            }
-            return removed;
-        }
+        int removed = (int) parallelStreamIndexed().filter(e -> filter.test(e.reference)).peek(e -> table.set(e.index, TOMBSTONE)).count();
+        size -= removed;
+        return removed > 0;
     }
 
     private static class ParallelHashSetIterator<T> implements Iterator<T> {
@@ -450,7 +412,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
         @Override
         public synchronized boolean tryAdvance(Consumer<? super T> action) {
-            return wrapped.tryAdvance(e -> action.accept(e.getReference()));
+            return wrapped.tryAdvance(e -> action.accept(e.reference));
         }
 
         @Override
@@ -477,14 +439,6 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         public IndexedReference(int index, T reference) {
             this.index = index;
             this.reference = reference;
-        }
-
-        public int getIndex() {
-            return index;
-        }
-
-        public T getReference() {
-            return reference;
         }
     }
 }

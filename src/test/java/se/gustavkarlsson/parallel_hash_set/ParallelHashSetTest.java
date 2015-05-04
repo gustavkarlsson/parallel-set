@@ -230,6 +230,26 @@ public class ParallelHashSetTest {
     }
 
     @Test
+    public void testRemoveIfOneHit() throws Exception {
+        set.add("test1");
+        set.add("test2");
+        assertTrue(set.removeIf("test1"::equals));
+        assertEquals(1, set.size());
+    }
+
+    @Test
+    public void testRemoveIfMiss() throws Exception {
+        set.add("test");
+        assertFalse(set.removeIf("test2"::equals));
+        assertEquals(1, set.size());
+    }
+
+    @Test
+    public void testRemoveIfNullFails() throws Exception {
+        set.removeIf(null);
+    }
+
+    @Test
     public void testRetainAllSubSet() throws Exception {
         set.addAll(superSet);
         set.retainAll(subSet);
