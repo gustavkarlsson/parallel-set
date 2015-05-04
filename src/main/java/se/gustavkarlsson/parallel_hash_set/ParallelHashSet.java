@@ -371,7 +371,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         }
     }
 
-    private static class ParallelHashSetSpliterator<T> implements Spliterator<T> {
+    private static class IndexedSpliterator<T> implements Spliterator<IndexedReference<T>> {
 
         private final AtomicReferenceArray<Object> table;
         private final float fillRatio;
@@ -379,14 +379,14 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         private int nextIndex;
         private int fence;
 
-        public ParallelHashSetSpliterator(ParallelHashSet set) {
+        public IndexedSpliterator(ParallelHashSet set) {
             this.table = set.table;
             this.fillRatio = (float) set.size() / table.length();
             this.nextIndex = 0;
             this.fence = table.length();
         }
 
-        private ParallelHashSetSpliterator(AtomicReferenceArray<Object> table, float fillRatio, int startIndex, int fence) {
+        private IndexedSpliterator(AtomicReferenceArray<Object> table, float fillRatio, int startIndex, int fence) {
             this.table = table;
             this.fillRatio = fillRatio;
             this.nextIndex = startIndex;
@@ -394,12 +394,12 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         }
 
         @Override
-        public synchronized boolean tryAdvance(Consumer<? super T> action) {
+        public boolean tryAdvance(Consumer<? super IndexedReference<T>> action) {
             while (nextIndex < fence) {
                 Object element = table.get(nextIndex);
                 nextIndex++;
                 if (element != null && element != TOMBSTONE) {
-                    action.accept((T) element);
+                    action.accept(new IndexedReference<T>(nextIndex - 1, (T) element));
                     return true;
                 }
             }
@@ -407,7 +407,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         }
 
         @Override
-        public synchronized Spliterator<T> trySplit() {
+        public Spliterator<IndexedReference<T>> trySplit() {
             int remaining = remaining();
             if (remaining < 2) {
                 return null;
@@ -415,8 +415,8 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
             return splitAt(nextIndex + (remaining / 2));
         }
 
-        private Spliterator<T> splitAt(int splitPoint) {
-            ParallelHashSetSpliterator<T> next = new ParallelHashSetSpliterator<T>(table, fillRatio, splitPoint, fence);
+        private Spliterator<IndexedReference<T>> splitAt(int splitPoint) {
+            IndexedSpliterator<T> next = new IndexedSpliterator<T>(table, fillRatio, splitPoint, fence);
             fence = splitPoint;
             return next;
         }
@@ -433,6 +433,58 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
         private int remaining() {
             return fence - nextIndex;
+        }
+    }
+
+    private static class ParallelHashSetSpliterator<T> implements Spliterator<T> {
+
+        private final Spliterator<IndexedReference<T>> wrapped;
+
+        public ParallelHashSetSpliterator(ParallelHashSet set) {
+            this.wrapped = new IndexedSpliterator<>(set);
+        }
+
+        private ParallelHashSetSpliterator(Spliterator<IndexedReference<T>> wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public synchronized boolean tryAdvance(Consumer<? super T> action) {
+            return wrapped.tryAdvance(e -> action.accept(e.getReference()));
+        }
+
+        @Override
+        public synchronized Spliterator<T> trySplit() {
+            return new ParallelHashSetSpliterator<>(wrapped.trySplit());
+        }
+
+        @Override
+        public long estimateSize() {
+            return wrapped.estimateSize();
+        }
+
+        @Override
+        public int characteristics() {
+            return wrapped.characteristics();
+        }
+    }
+
+    private static class IndexedReference<T> {
+
+        private final int index;
+        private final T reference;
+
+        public IndexedReference(int index, T reference) {
+            this.index = index;
+            this.reference = reference;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public T getReference() {
+            return reference;
         }
     }
 }
