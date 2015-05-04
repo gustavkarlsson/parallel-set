@@ -3,7 +3,6 @@ package se.gustavkarlsson.parallel_hash_set;
 import com.sun.istack.internal.NotNull;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -193,7 +192,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     }
 
     @Override
-    public synchronized boolean containsAll(Collection<?> collection) {
+    public synchronized boolean containsAll(@NotNull Collection<?> collection) {
         if (collection == null) {
             throw new NullPointerException("Supplied collection cannot be null");
         }
@@ -201,7 +200,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     }
 
     @Override
-    public synchronized boolean addAll(Collection<? extends T> collection) {
+    public synchronized boolean addAll(@NotNull Collection<? extends T> collection) {
         if (collection == null) {
             throw new NullPointerException("Supplied collection cannot be null");
         }
@@ -223,7 +222,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     }
 
     @Override
-    public synchronized boolean retainAll(Collection<?> collection) {
+    public synchronized boolean retainAll(@NotNull Collection<?> collection) {
         if (collection == null) {
             throw new NullPointerException("Supplied collection cannot be null");
         }
@@ -251,10 +250,10 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     }
 
     private AtomicReferenceArray<Object> createTable(int minCapacity) {
-        return new AtomicReferenceArray<Object>(calculateTableSize(minCapacity));
+        return new AtomicReferenceArray<>(calculateTableSize(minCapacity));
     }
 
-    private final int calculateTableSize(int capacity) {
+    private int calculateTableSize(int capacity) {
         int idealSize = (int) (capacity / loadFactor) + 1;
         int n = idealSize - 1;
         n |= n >>> 1;
@@ -277,7 +276,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
     @Override
     public synchronized void clear() {
-        table = new AtomicReferenceArray<Object>(table.length());
+        table = new AtomicReferenceArray<>(table.length());
         size = 0;
         usedSlots = 0;
     }
@@ -305,7 +304,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
         private int nextIndex = 0;
 
-        public ParallelHashSetIterator(ParallelHashSet set) {
+        public ParallelHashSetIterator(ParallelHashSet<T> set) {
             this.table = set.table;
         }
 
@@ -341,7 +340,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         private int nextIndex;
         private int fence;
 
-        public IndexedSpliterator(ParallelHashSet set) {
+        public IndexedSpliterator(ParallelHashSet<T> set) {
             this.table = set.table;
             this.fillRatio = (float) set.size() / table.length();
             this.nextIndex = 0;
@@ -361,7 +360,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
                 Object element = table.get(nextIndex);
                 nextIndex++;
                 if (element != null && element != TOMBSTONE) {
-                    action.accept(new IndexedReference<T>(nextIndex - 1, (T) element));
+                    action.accept(new IndexedReference<>(nextIndex - 1, (T) element));
                     return true;
                 }
             }
@@ -378,7 +377,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         }
 
         private Spliterator<IndexedReference<T>> splitAt(int splitPoint) {
-            IndexedSpliterator<T> next = new IndexedSpliterator<T>(table, fillRatio, splitPoint, fence);
+            IndexedSpliterator<T> next = new IndexedSpliterator<>(table, fillRatio, splitPoint, fence);
             fence = splitPoint;
             return next;
         }
@@ -402,7 +401,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
         private final Spliterator<IndexedReference<T>> wrapped;
 
-        public ParallelHashSetSpliterator(ParallelHashSet set) {
+        public ParallelHashSetSpliterator(ParallelHashSet<T> set) {
             this.wrapped = new IndexedSpliterator<>(set);
         }
 
