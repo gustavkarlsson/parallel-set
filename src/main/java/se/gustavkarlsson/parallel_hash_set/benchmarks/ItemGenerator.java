@@ -1,7 +1,10 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-/**
- * Created by gustav on 5/5/15.
- */
-public interface ItemGenerator {
+import java.util.Collection;
+
+public interface ItemGenerator<T> {
+
+	Collection<T> generate(int count);
+
+	String getName();
 }

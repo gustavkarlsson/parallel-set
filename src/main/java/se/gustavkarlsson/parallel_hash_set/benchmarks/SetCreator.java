@@ -1,7 +1,10 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-/**
- * Created by gustav on 5/5/15.
- */
-public interface SetCreator {
+import java.util.Set;
+
+public interface SetCreator<T> {
+
+	Set<T> create(int capacity);
+
+	String getName();
 }

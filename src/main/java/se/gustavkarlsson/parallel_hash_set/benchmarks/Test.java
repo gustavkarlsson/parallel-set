@@ -1,7 +1,10 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-/**
- * Created by gustav on 5/5/15.
- */
-public class Test {
+public interface Test {
+
+	void prepare();
+
+	Runnable createExecution();
+
+	String getDescription();
 }
