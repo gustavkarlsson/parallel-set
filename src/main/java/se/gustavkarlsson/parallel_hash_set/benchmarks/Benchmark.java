@@ -18,38 +18,33 @@ public class Benchmark {
 
 	    List<Test> tests = new ArrayList<>();
 
-		Test parallel4 = new SetTest<>(
-				new ParallelHashSetCreator<>(),
-				new AddAll<>(),
-				new RandomStringGenerator(),
-				1_000_000,
-				4);
+	    Test parallel = new SetTest<>(
+			    new ParallelHashSetCreator<>(),
+			    new AddAll<>(),
+			    new RandomStringGenerator(),
+			    1_000_000);
 	    Test hash = new SetTest<>(
 			    new HashSetCreator<>(),
 			    new AddAll<>(),
 			    new RandomStringGenerator(),
-			    1_000_000,
-			    4);
+			    1_000_000);
 	    Test concurrentSkipList = new SetTest<>(
 			    new ConcurrentSkipListSetCreator<>(),
 			    new AddAll<>(),
 			    new RandomStringGenerator(),
-			    1_000_000,
-			    4);
+			    1_000_000);
 	    Test linked = new SetTest<>(
 			    new LinkedHashSetCreator<>(),
 			    new AddAll<>(),
 			    new RandomStringGenerator(),
-			    1_000_000,
-			    4);
+			    1_000_000);
 	    Test tree = new SetTest<>(
 			    new TreeSetCreator<>(),
 			    new AddAll<>(),
 			    new RandomStringGenerator(),
-			    1_000_000,
-			    4);
+			    1_000_000);
 
-	    benchmark(parallel4, 100);
+	    benchmark(parallel, 100);
 
 	    System.out.print("Press any key to stop...");
 	    System.in.read();
