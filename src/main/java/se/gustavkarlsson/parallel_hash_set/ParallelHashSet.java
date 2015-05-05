@@ -15,10 +15,8 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
     private static final int MAXIMUM_CAPACITY = 1 << 30; // Must be a power of two
     private static final int DEFAULT_CAPACITY = 128;
-    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+    private static final float DEFAULT_LOAD_FACTOR = 0.5f;
     private static final Object TOMBSTONE = new Object();
-
-    // private static final ForkJoinPool workers = ForkJoinPool.commonPool();
 
     private final float loadFactor;
 
@@ -250,7 +248,11 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     }
 
     private AtomicReferenceArray<Object> createTable(int minCapacity) {
-        return new AtomicReferenceArray<>(calculateTableSize(minCapacity));
+	    int tableSize = calculateTableSize(minCapacity);
+	    if (tableSize > MAXIMUM_CAPACITY) {
+		    throw new RuntimeException("Maximum capacity exceeded");
+	    }
+	    return new AtomicReferenceArray<>(tableSize);
     }
 
     private int calculateTableSize(int capacity) {
@@ -261,7 +263,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         n |= n >>> 4;
         n |= n >>> 8;
         n |= n >>> 16;
-        return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+        return (n < 0) ? 1 : n + 1;
     }
 
     @Override
