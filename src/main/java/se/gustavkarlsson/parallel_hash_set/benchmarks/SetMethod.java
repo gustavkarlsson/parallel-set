@@ -5,9 +5,9 @@ import java.util.Set;
 
 public interface SetMethod<T> {
 
-	void prepare(Collection<T> input, Set<T> set);
+    void prepare(Collection<T> input, Set<T> set);
 
-	void call(Collection<T> input, Set<T> set);
+    void call(Collection<T> input, Set<T> set);
 
-	String getName();
+    String getName();
 }

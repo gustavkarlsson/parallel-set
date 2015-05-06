@@ -4,7 +4,7 @@ import java.util.Set;
 
 public interface SetCreator<T> {
 
-	Set<T> create(int capacity);
+    Set<T> create(int capacity);
 
-	String getName();
+    String getName();
 }

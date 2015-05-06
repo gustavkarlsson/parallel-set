@@ -4,7 +4,7 @@ import java.util.Collection;
 
 public interface ItemGenerator<T> {
 
-	Collection<T> generate(int count);
+    Collection<T> generate(int count);
 
-	String getName();
+    String getName();
 }

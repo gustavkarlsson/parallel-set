@@ -1,76 +1,62 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-import se.gustavkarlsson.parallel_hash_set.ParallelHashSet;
+import java.util.Arrays;
+
 import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.RandomStringGenerator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.methods.AddAll;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.*;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.*;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.HashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelConcurrentHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
 
 public class Benchmark {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
-	    System.out.print("Press any key to start...");
-	    System.in.read();
+        Test parallelHashSet = new SetTest<>(
+                new ParallelHashSetCreator<>(),
+                new AddAll<>(),
+                new RandomStringGenerator(),
+                1_000_000);
 
-	    List<Test> tests = new ArrayList<>();
+        Test parallelConcurrentHashSet = new SetTest<>(
+                new ParallelConcurrentHashSetCreator<>(),
+                new AddAll<>(),
+                new RandomStringGenerator(),
+                1_000_000);
 
-	    Test parallel = new SetTest<>(
-			    new ParallelHashSetCreator<>(),
-			    new AddAll<>(),
-			    new RandomStringGenerator(),
-			    1_000_000);
-	    Test hash = new SetTest<>(
-			    new HashSetCreator<>(),
-			    new AddAll<>(),
-			    new RandomStringGenerator(),
-			    1_000_000);
-	    Test concurrentSkipList = new SetTest<>(
-			    new ConcurrentSkipListSetCreator<>(),
-			    new AddAll<>(),
-			    new RandomStringGenerator(),
-			    1_000_000);
-	    Test linked = new SetTest<>(
-			    new LinkedHashSetCreator<>(),
-			    new AddAll<>(),
-			    new RandomStringGenerator(),
-			    1_000_000);
-	    Test tree = new SetTest<>(
-			    new TreeSetCreator<>(),
-			    new AddAll<>(),
-			    new RandomStringGenerator(),
-			    1_000_000);
+        Test hashSet = new SetTest<>(
+                new HashSetCreator<>(),
+                new AddAll<>(),
+                new RandomStringGenerator(),
+                1_000_000);
 
-	    benchmark(parallel, 100);
+        Test concurrentHashSet = new SetTest<>(
+                new ConcurrentHashSetCreator<>(),
+                new AddAll<>(),
+                new RandomStringGenerator(),
+                1_000_000);
 
-	    System.out.print("Press any key to stop...");
-	    System.in.read();
+        Arrays.asList(hashSet, concurrentHashSet, parallelConcurrentHashSet, parallelHashSet).forEach(t -> benchmark(t, 10));
     }
 
-	private static void benchmark(Test test, int count) {
-		System.gc();
-		System.out.println("Test: " + test.getDescription());
-		System.out.println("Preparing...");
-		test.prepare();
-		System.out.println("Warming up...");
-		test.createExecution().run();
-		System.out.println("Running...");
-		long timeTaken = measure(test, count);
-		System.out.println("Time taken: " + timeTaken + "ms");
-		System.out.println("");
-	}
+    private static void benchmark(Test test, int count) {
+        System.out.println("Test: " + test.getDescription());
+        test.prepare();
+        test.createExecution().run(); // Warmup round
+        long timeTaken = 0;
+        for (int i = 0; i < count; i++) {
+            System.gc();
+            Runnable execution = test.createExecution();
+            timeTaken += measure(execution);
+        }
+        System.out.println("Time taken: " + timeTaken / count + "ms\n");
+    }
 
-	private static long measure(Test test, int count) {
-		List<Runnable> executions = new ArrayList<>();
-		for (int i = 0; i < count; i++) {
-			executions.add(test.createExecution());
-		}
-		long start = System.currentTimeMillis();
-		executions.forEach(Runnable::run);
-		long stop = System.currentTimeMillis();
-		return (stop - start) / count;
-	}
+    private static long measure(Runnable execution) {
+        long start = System.currentTimeMillis();
+        execution.run();
+        long stop = System.currentTimeMillis();
+        return stop - start;
+    }
 }
