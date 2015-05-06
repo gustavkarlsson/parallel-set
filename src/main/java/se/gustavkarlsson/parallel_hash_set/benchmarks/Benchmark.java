@@ -1,43 +1,48 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.ExpensiveGenerator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.RandomStringGenerator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.methods.AddAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentSkipListSetCreator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.HashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.LinkedHashSetCreator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelConcurrentHashSetCreator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.TreeSetCreator;
 
 public class Benchmark {
 
     public static void main(String[] args) {
 
-        Test parallelHashSet = new SetTest<>(
-                new ParallelHashSetCreator<>(),
-                new AddAll<>(),
+        List<ItemGenerator<?>> itemGenerators = Arrays.asList(
                 new RandomStringGenerator(),
-                1_000_000);
+                new ExpensiveGenerator());
 
-        Test parallelConcurrentHashSet = new SetTest<>(
-                new ParallelConcurrentHashSetCreator<>(),
-                new AddAll<>(),
-                new RandomStringGenerator(),
-                1_000_000);
+        List<AddAll<?>> setMethods = Arrays.asList(
+                new AddAll<>());
 
-        Test hashSet = new SetTest<>(
-                new HashSetCreator<>(),
-                new AddAll<>(),
-                new RandomStringGenerator(),
-                1_000_000);
-
-        Test concurrentHashSet = new SetTest<>(
+        List<SetCreator<?>> setCreators = Arrays.asList(
                 new ConcurrentHashSetCreator<>(),
-                new AddAll<>(),
-                new RandomStringGenerator(),
-                1_000_000);
+                new ConcurrentSkipListSetCreator<>(),
+                new HashSetCreator<>(),
+                new LinkedHashSetCreator<>(),
+                new ParallelConcurrentHashSetCreator<>(),
+                new ParallelHashSetCreator<>(),
+                new TreeSetCreator<>());
 
-        Arrays.asList(hashSet, concurrentHashSet, parallelConcurrentHashSet, parallelHashSet).forEach(t -> benchmark(t, 10));
+        List<Test> tests = new ArrayList<Test>();
+
+        setCreators.forEach(set ->
+                itemGenerators.forEach(item ->
+                        setMethods.forEach(method ->
+                                tests.add(new SetTest(set, method, item, 1_000_000)))));
+
+        tests.forEach(t -> benchmark(t, 10));
     }
 
     private static void benchmark(Test test, int count) {
