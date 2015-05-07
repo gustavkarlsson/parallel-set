@@ -1,8 +1,9 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.ExpensiveGenerator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.RandomStringGenerator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.AddAll;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.ContainsAll;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RemoveAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
 
 import java.util.Arrays;
@@ -22,22 +23,22 @@ public class Benchmark {
 	);
 
 	private static List<SetOperation> setOperations = Arrays.asList(
-			new AddAll()/*,
+			new AddAll(),
 			new RemoveAll(),
-			new ContainsAll(),
+			new ContainsAll()/*,
 			new RetainAll()*/
 	);
 
 	private static List<ItemGenerator> itemGenerators = Arrays.asList(
-			new RandomStringGenerator(),
-			new ExpensiveGenerator()
+			new RandomStringGenerator()/*,
+			new ExpensiveGenerator()*/
 	);
 
 	private static List<Integer> itemsCounts = Arrays.asList(
-			1000,
+			/*1000,
 			10000,
 			100000,
-			1000000,
+			1000000,*/
 			10000000
 	);
 
