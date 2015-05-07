@@ -11,11 +11,11 @@ public class ParallelConcurrentHashSet<T> implements Set<T> {
     private final Set<T> wrapped;
 
     public ParallelConcurrentHashSet() {
-        wrapped = Collections.newSetFromMap(new ConcurrentHashMap<T, Boolean>());
+        wrapped = Collections.newSetFromMap(new ConcurrentHashMap<>());
     }
 
     public ParallelConcurrentHashSet(int initialCapacity) {
-        wrapped = Collections.newSetFromMap(new ConcurrentHashMap<T, Boolean>(initialCapacity));
+        wrapped = Collections.newSetFromMap(new ConcurrentHashMap<>(initialCapacity));
     }
 
     @Override
@@ -60,12 +60,12 @@ public class ParallelConcurrentHashSet<T> implements Set<T> {
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        return c.parallelStream().allMatch(o -> wrapped.contains(o));
+        return c.parallelStream().allMatch(wrapped::contains);
     }
 
     @Override
     public boolean addAll(Collection<? extends T> c) {
-        return c.parallelStream().filter(e -> wrapped.add(e)).count() > 0;
+        return c.parallelStream().filter(wrapped::add).count() > 0;
     }
 
     @Override
@@ -75,7 +75,7 @@ public class ParallelConcurrentHashSet<T> implements Set<T> {
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        return c.parallelStream().filter(e -> wrapped.remove(e)).count() < 0;
+        return c.parallelStream().filter(wrapped::remove).count() < 0;
     }
 
     @Override

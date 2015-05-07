@@ -2,9 +2,9 @@ package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
 import java.util.Set;
 
-public interface SetCreator<T> {
+public interface SetCreator {
 
-    Set<T> create(int capacity);
+    Set<Object> create(int capacity);
 
     String getName();
 }

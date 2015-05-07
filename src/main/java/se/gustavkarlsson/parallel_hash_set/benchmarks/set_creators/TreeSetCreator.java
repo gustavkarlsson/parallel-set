@@ -5,7 +5,7 @@ import java.util.TreeSet;
 
 import se.gustavkarlsson.parallel_hash_set.benchmarks.SetCreator;
 
-public class TreeSetCreator<T> implements SetCreator<T> {
+public class TreeSetCreator<T> implements SetCreator {
 
     @Override
     public String getName() {
@@ -13,7 +13,7 @@ public class TreeSetCreator<T> implements SetCreator<T> {
     }
 
     @Override
-    public Set<T> create(int capacity) {
+    public Set<Object> create(int capacity) {
         return new TreeSet<>();
     }
 }

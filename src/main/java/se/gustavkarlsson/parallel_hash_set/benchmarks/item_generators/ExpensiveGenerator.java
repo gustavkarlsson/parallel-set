@@ -1,28 +1,57 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 
-import se.gustavkarlsson.parallel_hash_set.benchmarks.ItemGenerator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.classes.Expensive;
+public class ExpensiveGenerator extends AbstractItemGenerator {
 
-public class ExpensiveGenerator implements ItemGenerator<Expensive> {
-
-    @Override
-    public Collection<Expensive> generate(int count) {
-        Random random = new Random(0);
-        List<Expensive> items = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            items.add(new Expensive(new BigInteger(130, random).toString(32)));
-        }
-        return items;
-    }
+	private final Random random = new Random(0);
 
     @Override
     public String getName() {
         return "Expensive";
     }
+
+	@Override
+	protected Object generateItem() {
+		return new Expensive(new BigInteger(130, random).toString(32));
+	}
+
+	private static class Expensive implements Comparable<Expensive> {
+
+		private final String wrapped;
+
+		public Expensive(String wrapped) {
+			this.wrapped = wrapped;
+		}
+
+		@Override
+		public String toString() {
+			return wrapped;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof Expensive) {
+				Expensive other = (Expensive) obj;
+				return wrapped.equals(other.wrapped);
+			}
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = wrapped.hashCode();
+			for (int i = 0; i < 1_000; i++) {
+				hash += wrapped.hashCode();
+			}
+			return hash;
+		}
+
+		@Override
+		public int compareTo(Expensive o) {
+			return wrapped.compareTo(o.wrapped);
+		}
+
+	}
 }

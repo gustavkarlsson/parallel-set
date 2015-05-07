@@ -3,18 +3,18 @@ package se.gustavkarlsson.parallel_hash_set.benchmarks;
 import java.util.Collection;
 import java.util.Set;
 
-public class SetTest<T> implements Test {
+public class SetTest implements Test {
 
-    private final SetCreator<T> creator;
-    private final SetMethod<T> method;
-    private final ItemGenerator<T> itemGenerator;
+    private final SetCreator creator;
+    private final SetOperation operation;
+    private final ItemGenerator itemGenerator;
     private final int itemCount;
 
-    private Collection<T> input;
+    private Collection<?> input;
 
-    public SetTest(SetCreator<T> creator, SetMethod<T> method, ItemGenerator<T> itemGenerator, int itemCount) {
+    public SetTest(SetCreator creator, SetOperation operation, ItemGenerator itemGenerator, int itemCount) {
         this.creator = creator;
-        this.method = method;
+        this.operation = operation;
         this.itemGenerator = itemGenerator;
         this.itemCount = itemCount;
     }
@@ -26,14 +26,14 @@ public class SetTest<T> implements Test {
 
     @Override
     public Runnable createExecution() {
-        Set<T> set = creator.create(itemCount);
-        method.prepare(input, set);
-        return () -> method.call(input, set);
+        Set<Object> set = creator.create(itemCount);
+        operation.prepare(input, set);
+        return () -> operation.call(input, set);
     }
 
     @Override
     public String getDescription() {
-        Object[] arguments = { creator.getName(), method.getName(), itemGenerator.getName(), itemCount };
-        return String.format("Set: %-26s Method: %-11s Item: %-20s Count: %-9s", arguments);
+        Object[] arguments = { creator.getName(), operation.getName(), itemGenerator.getName(), itemCount };
+        return String.format("Set: %-26s Operation: %-11s Item: %-20s Count: %-9s", arguments);
     }
 }

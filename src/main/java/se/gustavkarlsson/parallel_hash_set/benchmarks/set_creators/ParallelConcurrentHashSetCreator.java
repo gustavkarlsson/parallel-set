@@ -5,11 +5,11 @@ import java.util.Set;
 import se.gustavkarlsson.parallel_hash_set.ParallelConcurrentHashSet;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.SetCreator;
 
-public class ParallelConcurrentHashSetCreator<T> implements SetCreator<T> {
+public class ParallelConcurrentHashSetCreator<T> implements SetCreator {
 
     @Override
-    public Set<T> create(int capacity) {
-        return new ParallelConcurrentHashSet<T>(capacity);
+    public Set<Object> create(int capacity) {
+        return new ParallelConcurrentHashSet<>(capacity);
     }
 
     @Override

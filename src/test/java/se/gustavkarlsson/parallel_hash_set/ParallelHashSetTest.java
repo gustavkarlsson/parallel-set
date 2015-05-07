@@ -314,10 +314,7 @@ public class ParallelHashSetTest {
 	public void testIteratorIteratesAll() throws Exception {
 		Set<Object> verifySet = new HashSet<>();
 		set.addAll(superSet);
-		Iterator<Object> it = set.iterator();
-		while (it.hasNext()) {
-			assertTrue(verifySet.add(it.next()));
-		}
+		set.forEach(e -> assertTrue(verifySet.add(e)));
 		assertTrue(verifySet.equals(set));
 	}
 

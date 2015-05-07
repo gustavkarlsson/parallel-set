@@ -15,9 +15,8 @@ import java.util.stream.StreamSupport;
 
 public class ParallelHashSet<T> extends AbstractSet<T> {
 
-    private static final int MAXIMUM_CAPACITY = 1 << 30; // Must be a power of
-                                                         // two
-    private static final int DEFAULT_CAPACITY = 128;
+    private static final int MAXIMUM_CAPACITY = 1 << 30; // Must be a power of two
+    private static final int DEFAULT_CAPACITY = 8;
     private static final float DEFAULT_LOAD_FACTOR = 0.5f;
     private static final Object TOMBSTONE = new Object();
 
@@ -25,7 +24,6 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
     private AtomicReferenceArray<Object> table;
     private int size = 0;
-    private int usedSlots = 0;
 
     public ParallelHashSet(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0) {
@@ -59,15 +57,14 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         int index = element.hashCode();
         while (true) {
             index &= table.length() - 1;
-            final Object previous = table.get(index);
-            if (previous == null) {
+            final Object existing = table.get(index);
+            if (existing == null || existing == TOMBSTONE) {
                 // Free slot. Set element
                 table.set(index, element);
                 size++;
-                usedSlots++;
                 return true;
             }
-            if (previous != TOMBSTONE && (element == previous || element.equals(previous))) {
+            if (element.equals(existing)) {
                 // Same or equal object. Element already exists
                 return false;
             }
@@ -83,11 +80,11 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         int index = element.hashCode();
         while (true) {
             index &= table.length() - 1;
-            final Object previous = table.get(index);
-            if (previous == null && table.compareAndSet(index, null, element)) {
+            final Object existing = table.get(index);
+            if ((existing == null || existing == TOMBSTONE) && table.compareAndSet(index, null, element)) {
                 // Slot was free and remained free during CAS
                 return true;
-            } else if (previous != TOMBSTONE && (element == previous || element.equals(previous))) {
+            } else if (element.equals(existing)) {
                 // Same or equal object. Element already exists
                 return false;
             }
@@ -109,7 +106,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
                 // Free slot. Element could not be found
                 return false;
             }
-            if (existing != TOMBSTONE && (element == existing || element.equals(existing))) {
+            if (existing != TOMBSTONE && element.equals(existing)) {
                 // Same or equal element. Set tombstone
                 table.set(index, TOMBSTONE);
                 size--;
@@ -132,7 +129,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
                 // Free slot. Element could not be found
                 return false;
             }
-            if (existing != TOMBSTONE && (element == existing || element.equals(existing))
+            if (existing != TOMBSTONE && element.equals(existing)
                     && table.compareAndSet(index, existing, TOMBSTONE)) {
                 // Successfully replaced with tombstone
                 return true;
@@ -156,7 +153,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
                 // Free slot. Element could not be found
                 return false;
             }
-            if (existing != TOMBSTONE && (element == existing || element.equals(existing))) {
+            if (existing != TOMBSTONE && element.equals(existing)) {
                 // Same or equal element
                 return true;
             }
@@ -211,7 +208,6 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
         resizeTableIfNeeded(collection.size());
         int added = (int) collection.parallelStream().filter(this::addConcurrent).count();
         size += added;
-        usedSlots += added;
         return added > 0;
     }
 
@@ -242,36 +238,36 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
     private void resizeTableIfNeeded(int potentialElements) {
         float maxLoad = table.length() * loadFactor;
-        int potentialLoad = usedSlots + potentialElements;
+        int potentialLoad = size() + potentialElements;
         if (potentialLoad > maxLoad) {
-            resizeTable(size() + potentialElements);
+            resizeTable(potentialLoad);
         }
     }
 
-    private void resizeTable(int minCapacity) {
+    private void resizeTable(int requiredCapacity) {
         Stream<T> stream = parallelStream(); // Stream of current table contents
-        table = createTable(minCapacity); // Switch table
-        stream.forEach(this::addConcurrent); // Add elemets from stream to new
-                                             // table
+        table = createTable(requiredCapacity); // Switch table
+        stream.forEach(this::addConcurrent); // Add elements from stream to new table
     }
 
-    private AtomicReferenceArray<Object> createTable(int minCapacity) {
-        int tableSize = calculateTableSize(minCapacity);
-        if (tableSize > MAXIMUM_CAPACITY) {
-            throw new RuntimeException("Maximum capacity exceeded");
-        }
-        return new AtomicReferenceArray<>(tableSize);
+    private AtomicReferenceArray<Object> createTable(int requiredCapacity) {
+	    if (requiredCapacity >= MAXIMUM_CAPACITY) {
+		    throw new RuntimeException("Maximum capacity exceeded");
+	    }
+	    int newSize = calculateIdealTableSize(requiredCapacity);
+	    if (newSize > MAXIMUM_CAPACITY) {
+		    newSize = MAXIMUM_CAPACITY;
+	    }
+	    return new AtomicReferenceArray<>(newSize);
     }
 
-    private int calculateTableSize(int capacity) {
-        int idealSize = (int) (capacity / loadFactor) + 1;
-        int n = idealSize - 1;
-        n |= n >>> 1;
-        n |= n >>> 2;
-        n |= n >>> 4;
-        n |= n >>> 8;
-        n |= n >>> 16;
-        return (n < 0) ? 1 : n + 1;
+    private int calculateIdealTableSize(int requiredCapacity) {
+	    int idealSize = (int) Math.ceil(requiredCapacity / loadFactor);
+	    int actualSize = 2;
+	    while (actualSize < idealSize) {
+		    actualSize *= 2;
+	    }
+        return actualSize;
     }
 
     @Override
@@ -288,7 +284,6 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
     public synchronized void clear() {
         table = new AtomicReferenceArray<>(table.length());
         size = 0;
-        usedSlots = 0;
     }
 
     @Override

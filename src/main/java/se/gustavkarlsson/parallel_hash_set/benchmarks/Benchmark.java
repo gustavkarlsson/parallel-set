@@ -1,67 +1,80 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.ExpensiveGenerator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.RandomStringGenerator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.methods.AddAll;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentHashSetCreator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentSkipListSetCreator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.HashSetCreator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.LinkedHashSetCreator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelConcurrentHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.AddAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.TreeSetCreator;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class Benchmark {
 
-    public static void main(String[] args) {
+	private static List<SetCreator> setCreators = Arrays.asList(
+			/*new TreeSetCreator(),
+			new HashSetCreator(),
+			new LinkedHashSetCreator(),
+			new ConcurrentHashSetCreator(),
+			new ConcurrentSkipListSetCreator(),
+			new ParallelConcurrentHashSetCreator(),*/
+			new ParallelHashSetCreator()
+	);
 
-        List<ItemGenerator<?>> itemGenerators = Arrays.asList(
-                new RandomStringGenerator(),
-                new ExpensiveGenerator());
+	private static List<SetOperation> setOperations = Arrays.asList(
+			new AddAll()/*,
+			new RemoveAll(),
+			new ContainsAll(),
+			new RetainAll()*/
+	);
 
-        List<AddAll<?>> setMethods = Arrays.asList(
-                new AddAll<>());
+	private static List<ItemGenerator> itemGenerators = Arrays.asList(
+			new RandomStringGenerator(),
+			new ExpensiveGenerator()
+	);
 
-        List<SetCreator<?>> setCreators = Arrays.asList(
-                new ConcurrentHashSetCreator<>(),
-                new ConcurrentSkipListSetCreator<>(),
-                new HashSetCreator<>(),
-                new LinkedHashSetCreator<>(),
-                new ParallelConcurrentHashSetCreator<>(),
-                new ParallelHashSetCreator<>(),
-                new TreeSetCreator<>());
+	private static List<Integer> itemsCounts = Arrays.asList(
+			1000,
+			10000,
+			100000,
+			1000000,
+			10000000
+	);
 
-        List<Test> tests = new ArrayList<Test>();
+	public static void main(String[] args) {
 
-        setCreators.forEach(set ->
-                itemGenerators.forEach(item ->
-                        setMethods.forEach(method ->
-                                tests.add(new SetTest(set, method, item, 1_000_000)))));
+		Stream<SetTest> tests = setCreators.stream().flatMap(setCreator ->
+				setOperations.stream().flatMap(setOperation ->
+						itemGenerators.stream().flatMap(itemGenerator ->
+								itemsCounts.stream().map(itemCount ->
+										new SetTest(setCreator, setOperation, itemGenerator, itemCount)))));
 
-        tests.forEach(t -> benchmark(t, 10));
-    }
+		int iterations = 1;
+		System.out.println("Running benchmarks, averaging results over " + iterations + " iterations\n");
 
-    private static void benchmark(Test test, int count) {
-        System.out.println("Test: " + test.getDescription());
-        test.prepare();
-        test.createExecution().run(); // Warmup round
-        long timeTaken = 0;
-        for (int i = 0; i < count; i++) {
-            System.gc();
-            Runnable execution = test.createExecution();
-            timeTaken += measure(execution);
-        }
-        System.out.println("Time taken: " + timeTaken / count + "ms\n");
-    }
+		long start = System.currentTimeMillis();
+		tests.forEach(test -> benchmark(test, iterations));
+		long stop = System.currentTimeMillis();
+		System.out.println("Total time taken: " + (stop - start) / 1000 + "s");
+	}
 
-    private static long measure(Runnable execution) {
-        long start = System.currentTimeMillis();
-        execution.run();
-        long stop = System.currentTimeMillis();
-        return stop - start;
-    }
+	private static void benchmark(Test test, int count) {
+		System.out.println(test.getDescription());
+		test.prepare();
+		test.createExecution().run(); // Warm up round
+		long timeTaken = 0;
+		for (int i = 0; i < count; i++) {
+			System.gc();
+			Runnable execution = test.createExecution();
+			timeTaken += measure(execution);
+		}
+		System.out.println("Time taken: " + timeTaken / count + "ms\n");
+	}
+
+	private static long measure(Runnable execution) {
+		long start = System.currentTimeMillis();
+		execution.run();
+		long stop = System.currentTimeMillis();
+		return stop - start;
+	}
 }
