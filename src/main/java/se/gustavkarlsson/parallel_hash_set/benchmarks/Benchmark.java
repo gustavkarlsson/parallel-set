@@ -4,7 +4,8 @@ import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.RandomStri
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.AddAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.ContainsAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RemoveAll;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RetainAll;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -13,20 +14,20 @@ import java.util.stream.Stream;
 public class Benchmark {
 
 	private static List<SetCreator> setCreators = Arrays.asList(
-			/*new TreeSetCreator(),
+			new TreeSetCreator(),
 			new HashSetCreator(),
-			new LinkedHashSetCreator(),
-			new ConcurrentHashSetCreator(),
+			//new LinkedHashSetCreator(),
+			//new ConcurrentHashSetCreator(),
 			new ConcurrentSkipListSetCreator(),
-			new ParallelConcurrentHashSetCreator(),*/
+			new ParallelConcurrentHashSetCreator(),
 			new ParallelHashSetCreator()
 	);
 
 	private static List<SetOperation> setOperations = Arrays.asList(
 			new AddAll(),
 			new RemoveAll(),
-			new ContainsAll()/*,
-			new RetainAll()*/
+			new ContainsAll(),
+			new RetainAll()
 	);
 
 	private static List<ItemGenerator> itemGenerators = Arrays.asList(
@@ -35,11 +36,11 @@ public class Benchmark {
 	);
 
 	private static List<Integer> itemsCounts = Arrays.asList(
-			/*1000,
-			10000,
-			100000,
-			1000000,*/
-			10000000
+			//1000,
+			//10000,
+			100000
+			//1000000,
+			//10000000
 	);
 
 	public static void main(String[] args) {
