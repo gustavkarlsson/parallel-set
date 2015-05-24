@@ -17,7 +17,7 @@ public class ParallelHashSet<T> extends AbstractSet<T> {
 
     private static final int MAXIMUM_CAPACITY = 1 << 30; // Must be a power of two
     private static final int DEFAULT_CAPACITY = 8;
-    private static final float DEFAULT_LOAD_FACTOR = 0.5f;
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
     private static final Object TOMBSTONE = new Object();
 
     private final float loadFactor;

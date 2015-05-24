@@ -5,25 +5,29 @@ import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.AddAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.ContainsAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RemoveAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RetainAll;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.*;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.HashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelConcurrentHashSetCreator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 
 public class Benchmark {
 
 	private static List<SetCreator> setCreators = Arrays.asList(
-			new TreeSetCreator(),
+			//new TreeSetCreator(),
+			//new ConcurrentSkipListSetCreator(),
 			new HashSetCreator(),
-			//new LinkedHashSetCreator(),
-			//new ConcurrentHashSetCreator(),
-			new ConcurrentSkipListSetCreator(),
+			new ConcurrentHashSetCreator(),
 			new ParallelConcurrentHashSetCreator(),
 			new ParallelHashSetCreator()
 	);
 
 	private static List<SetOperation> setOperations = Arrays.asList(
+			//new RemoveIf()
 			new AddAll(),
 			new RemoveAll(),
 			new ContainsAll(),
@@ -31,31 +35,33 @@ public class Benchmark {
 	);
 
 	private static List<ItemGenerator> itemGenerators = Arrays.asList(
-			new RandomStringGenerator()/*,
-			new ExpensiveGenerator()*/
+			// new ExpensiveGenerator()
+			new RandomStringGenerator()
 	);
 
 	private static List<Integer> itemsCounts = Arrays.asList(
-			//1000,
-			//10000,
-			100000
-			//1000000,
-			//10000000
+			//10_000
+			1_000_000
 	);
 
-	public static void main(String[] args) {
+	private static final int ITERATIONS = 10;
 
-		Stream<SetTest> tests = setCreators.stream().flatMap(setCreator ->
-				setOperations.stream().flatMap(setOperation ->
+	public static void main(String[] args) {
+		if (args.length > 0) {
+			int parallelism = Integer.parseInt(args[0]);
+			System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", String.valueOf(parallelism));
+		}
+
+		Stream<SetTest> tests = setOperations.stream().flatMap(setOperation ->
+				setCreators.stream().flatMap(setCreator ->
 						itemGenerators.stream().flatMap(itemGenerator ->
 								itemsCounts.stream().map(itemCount ->
-										new SetTest(setCreator, setOperation, itemGenerator, itemCount)))));
+										new SetTest(setOperation, setCreator, itemGenerator, itemCount)))));
 
-		int iterations = 1;
-		System.out.println("Running benchmarks, averaging results over " + iterations + " iterations\n");
+		System.out.println("Running benchmarks with parallelism: " + ForkJoinPool.getCommonPoolParallelism() + ", averaging results over " + ITERATIONS + " iterations\n");
 
 		long start = System.currentTimeMillis();
-		tests.forEach(test -> benchmark(test, iterations));
+		tests.forEach(test -> benchmark(test, ITERATIONS));
 		long stop = System.currentTimeMillis();
 		System.out.println("Total time taken: " + (stop - start) / 1000 + "s");
 	}

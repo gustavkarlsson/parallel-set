@@ -5,16 +5,16 @@ import java.util.Set;
 
 public class SetTest implements Test {
 
+	private final SetOperation operation;
     private final SetCreator creator;
-    private final SetOperation operation;
     private final ItemGenerator itemGenerator;
     private final int itemCount;
 
     private Collection<?> input;
 
-    public SetTest(SetCreator creator, SetOperation operation, ItemGenerator itemGenerator, int itemCount) {
+    public SetTest(SetOperation operation, SetCreator creator, ItemGenerator itemGenerator, int itemCount) {
+	    this.operation = operation;
         this.creator = creator;
-        this.operation = operation;
         this.itemGenerator = itemGenerator;
         this.itemCount = itemCount;
     }
@@ -33,7 +33,7 @@ public class SetTest implements Test {
 
     @Override
     public String getDescription() {
-        Object[] arguments = { creator.getName(), operation.getName(), itemGenerator.getName(), itemCount };
-        return String.format("Set: %-26s Operation: %-11s Item: %-20s Count: %-9s", arguments);
+        Object[] arguments = { operation.getName(), creator.getName(), itemGenerator.getName(), itemCount };
+        return String.format("Operation: %-11s Set: %-26s Item: %-20s Count: %-9s", arguments);
     }
 }

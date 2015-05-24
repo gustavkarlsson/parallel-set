@@ -8,11 +8,11 @@ public abstract class AbstractItemGenerator implements ItemGenerator {
 
 	@Override
 	public Collection<?> generate(int count) {
-		List<Object> items = new ArrayList<>(count);
+		Set<Object> items = new LinkedHashSet<>(count);
 		for (int i = 0; i < count; i++) {
 			items.add(generateItem());
 		}
-		return Collections.unmodifiableList(items);
+		return Collections.unmodifiableSet(items);
 	}
 
 	protected abstract Object generateItem();
