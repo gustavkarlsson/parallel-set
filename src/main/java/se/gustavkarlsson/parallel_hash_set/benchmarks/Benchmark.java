@@ -1,27 +1,25 @@
 package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
-import se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators.RandomStringGenerator;
+import se.gustavkarlsson.parallel_hash_set.benchmarks.item_providers.RandomStringProvider;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.AddAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.ContainsAll;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RemoveAll;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.operations.RetainAll;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ConcurrentHashSetCreator;
-import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.HashSetCreator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelConcurrentHashSetCreator;
 import se.gustavkarlsson.parallel_hash_set.benchmarks.set_creators.ParallelHashSetCreator;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 
 public class Benchmark {
 
+	public static final String PARALLELISM_PROPERTY = "java.util.concurrent.ForkJoinPool.common.parallelism";
+
 	private static List<SetCreator> setCreators = Arrays.asList(
 			//new TreeSetCreator(),
 			//new ConcurrentSkipListSetCreator(),
-			new HashSetCreator(),
-			new ConcurrentHashSetCreator(),
+			//new HashSetCreator(),
+			//new ConcurrentHashSetCreator(),
 			new ParallelConcurrentHashSetCreator(),
 			new ParallelHashSetCreator()
 	);
@@ -30,35 +28,42 @@ public class Benchmark {
 			//new RemoveIf()
 			new AddAll(),
 			new RemoveAll(),
-			new ContainsAll(),
-			new RetainAll()
+			new ContainsAll()
+			//new RetainAll()
 	);
 
-	private static List<ItemGenerator> itemGenerators = Arrays.asList(
+	private static List<ItemProvider> itemProviders = Arrays.asList(
 			// new ExpensiveGenerator()
-			new RandomStringGenerator()
+			new RandomStringProvider()
 	);
 
 	private static List<Integer> itemsCounts = Arrays.asList(
-			//10_000
-			1_000_000
+			1_000,
+			2_000,
+			4_000,
+			8_000,
+			16_000,
+			32_000,
+			64_000,
+			128_000,
+			256_000
 	);
 
-	private static final int ITERATIONS = 10;
+	private static final int ITERATIONS = 100;
 
 	public static void main(String[] args) {
 		if (args.length > 0) {
 			int parallelism = Integer.parseInt(args[0]);
-			System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", String.valueOf(parallelism));
+			System.setProperty(PARALLELISM_PROPERTY, String.valueOf(parallelism));
 		}
 
 		Stream<SetTest> tests = setOperations.stream().flatMap(setOperation ->
 				setCreators.stream().flatMap(setCreator ->
-						itemGenerators.stream().flatMap(itemGenerator ->
+						itemProviders.stream().flatMap(itemGenerator ->
 								itemsCounts.stream().map(itemCount ->
 										new SetTest(setOperation, setCreator, itemGenerator, itemCount)))));
 
-		System.out.println("Running benchmarks with parallelism: " + ForkJoinPool.getCommonPoolParallelism() + ", averaging results over " + ITERATIONS + " iterations\n");
+		System.out.println("Running benchmarks with parallelism: " + Integer.parseInt(System.getProperty(PARALLELISM_PROPERTY)) + ", averaging results over " + ITERATIONS + " iterations\n");
 
 		long start = System.currentTimeMillis();
 		tests.forEach(test -> benchmark(test, ITERATIONS));
@@ -76,13 +81,13 @@ public class Benchmark {
 			Runnable execution = test.createExecution();
 			timeTaken += measure(execution);
 		}
-		System.out.println("Time taken: " + timeTaken / count + "ms\n");
+		System.out.println("Time taken: " + (timeTaken / count) / 1_000 + " microseconds\n");
 	}
 
 	private static long measure(Runnable execution) {
-		long start = System.currentTimeMillis();
+		long start = System.nanoTime();
 		execution.run();
-		long stop = System.currentTimeMillis();
+		long stop = System.nanoTime();
 		return stop - start;
 	}
 }

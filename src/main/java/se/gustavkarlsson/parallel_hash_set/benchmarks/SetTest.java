@@ -7,21 +7,21 @@ public class SetTest implements Test {
 
 	private final SetOperation operation;
     private final SetCreator creator;
-    private final ItemGenerator itemGenerator;
+    private final ItemProvider itemProvider;
     private final int itemCount;
 
     private Collection<?> input;
 
-    public SetTest(SetOperation operation, SetCreator creator, ItemGenerator itemGenerator, int itemCount) {
+    public SetTest(SetOperation operation, SetCreator creator, ItemProvider itemProvider, int itemCount) {
 	    this.operation = operation;
         this.creator = creator;
-        this.itemGenerator = itemGenerator;
+        this.itemProvider = itemProvider;
         this.itemCount = itemCount;
     }
 
     @Override
     public void prepare() {
-        input = itemGenerator.generate(itemCount);
+        input = itemProvider.getItems(itemCount);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class SetTest implements Test {
 
     @Override
     public String getDescription() {
-        Object[] arguments = { operation.getName(), creator.getName(), itemGenerator.getName(), itemCount };
+        Object[] arguments = { operation.getName(), creator.getName(), itemProvider.getName(), itemCount };
         return String.format("Operation: %-11s Set: %-26s Item: %-20s Count: %-9s", arguments);
     }
 }

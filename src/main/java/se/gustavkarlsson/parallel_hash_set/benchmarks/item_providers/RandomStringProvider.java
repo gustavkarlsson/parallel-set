@@ -1,9 +1,9 @@
-package se.gustavkarlsson.parallel_hash_set.benchmarks.item_generators;
+package se.gustavkarlsson.parallel_hash_set.benchmarks.item_providers;
 
 import java.math.BigInteger;
 import java.util.Random;
 
-public class RandomStringGenerator extends AbstractItemGenerator {
+public class RandomStringProvider extends CachingItemProvider {
 
 	private final Random random = new Random(0);
 
@@ -13,7 +13,7 @@ public class RandomStringGenerator extends AbstractItemGenerator {
 	}
 
 	@Override
-	protected Object generateItem() {
+	protected Object createItem() {
 		return new BigInteger(130, random).toString(32);
 	}
 }

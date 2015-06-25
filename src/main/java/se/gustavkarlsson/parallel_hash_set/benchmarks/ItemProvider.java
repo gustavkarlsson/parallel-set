@@ -2,9 +2,9 @@ package se.gustavkarlsson.parallel_hash_set.benchmarks;
 
 import java.util.Collection;
 
-public interface ItemGenerator {
+public interface ItemProvider {
 
-    Collection<?> generate(int count);
+    Collection<?> getItems(int count);
 
     String getName();
 }
